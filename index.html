@@ -144,6 +144,7 @@ const LANGS=[
  ["Te amo","Antigua Roma"]
 ];
 const $=id=>document.getElementById(id);
+const visible=id=>!$(id).classList.contains('hidden');
 const show=id=>$(id).classList.remove('hidden'), hide=id=>$(id).classList.add('hidden');
 
 /* Cielo */
@@ -167,6 +168,7 @@ mbtn.classList.add('off');
 /* Corazón → idiomas */
 let timer;
 $('heart').onclick=()=>{
+  if(!visible('intro')||$('heart').classList.contains('open'))return;
   $('heart').classList.add('open');
   hide('intro');
   $('bgheart').classList.add('on');
@@ -174,6 +176,7 @@ $('heart').onclick=()=>{
 };
 let vinylDone=false;
 $('play').onclick=()=>{
+  if(!visible('vinyl'))return;
   vinylDone=true;
   if($('vinyl').classList.contains('playing'))return;
   $('vinyl').classList.add('playing');$('play').textContent='Sonando… 🎶';
@@ -224,9 +227,9 @@ let noCount=0;
 const no=$('no');
 function flee(e){if(e)e.preventDefault();const r=no.getBoundingClientRect();no.classList.add('free');const pad=20,W=innerWidth-r.width-pad,H=innerHeight-r.height-pad;const Y=$('yes').getBoundingClientRect(),gap=24;let x,y,t=0;do{x=pad+Math.random()*(W-pad);y=pad+Math.random()*(H-pad);t++}while(t<200&&(Math.hypot(x-r.left,y-r.top)<120||(x<Y.right+gap&&x+r.width>Y.left-gap&&y<Y.bottom+gap&&y+r.height>Y.top-gap)));no.style.left=x+'px';no.style.top=y+'px';const m=noCount<noMsgs.length?noMsgs[noCount]:noMsgs[noMsgs.length-1];noCount++;$('noMsg').textContent=m.replace('{n}',noCount);$('yes').style.transform=`scale(${Math.min(1+noCount*0.07,1.8)})`}
 no.addEventListener('mouseenter',flee);no.addEventListener('touchstart',flee,{passive:false});no.addEventListener('click',flee);
-$('yes').onclick=()=>{hide('question');no.classList.remove('free');no.style.left=no.style.top='';rain();setTimeout(()=>{show('final');startPhotos()},400)};
+$('yes').onclick=()=>{if(!visible('question'))return;hide('question');no.classList.remove('free');no.style.left=no.style.top='';rain();setTimeout(()=>{show('final');startPhotos()},400)};
 
-$('again').onclick=()=>{hide('final');stopPhotos();$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
+$('again').onclick=()=>{if(!visible('final'))return;runId++;clearTimeout(timer);hide('final');stopPhotos();$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
 </script>
 </body>
 </html>
