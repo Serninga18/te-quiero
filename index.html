@@ -58,13 +58,39 @@
 
   #music{position:fixed;top:calc(16px + env(safe-area-inset-top));right:16px;z-index:30;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,215,228,.35);background:rgba(255,255,255,.08);color:var(--soft);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   #music.off{opacity:.5}
+  #music{display:none}
+  #music.ready{display:flex}
+
+  #vinyl h2{font-weight:400;font-style:italic;font-size:clamp(26px,6vw,40px);margin:0 0 10px;color:#fff;text-shadow:0 0 14px #ff8fb3}
+  #vinyl p{font-family:Poppins;font-weight:300;font-size:15px;line-height:1.7;max-width:320px;margin:0 0 30px;opacity:.9}
+  .disc{width:min(56vw,230px);height:min(56vw,230px);border-radius:50%;background:repeating-radial-gradient(circle,#0d0d12 0 3px,#1c1c26 3px 6px);display:flex;align-items:center;justify-content:center;margin-bottom:34px;box-shadow:0 0 40px rgba(255,79,134,.45),inset 0 0 0 2px rgba(255,255,255,.06);animation:spin 3.2s linear infinite;animation-play-state:paused;position:relative}
+  .disc:after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 40%,transparent 60%,rgba(255,255,255,.06))}
+  .disc div{width:36%;height:36%;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;color:#fff;font-size:clamp(22px,6vw,34px);box-shadow:0 0 0 4px rgba(0,0,0,.3)}
+  #vinyl.playing .disc{animation-play-state:running}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #play{background:var(--glow);color:#fff;box-shadow:0 0 20px var(--glow)}
+
+  #photos{position:fixed;inset:0;overflow:hidden;z-index:4;pointer-events:none}
+  .pol{position:absolute;top:0;width:clamp(100px,28vw,160px);animation:pfall var(--t) linear forwards;cursor:pointer;pointer-events:auto}
+  .pol .in{background:#fff;padding:6px 6px 22px;box-shadow:0 8px 18px rgba(0,0,0,.45);animation:sway var(--s) ease-in-out infinite alternate;transform-origin:50% 0}
+  .pol img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 30%;pointer-events:none}
+  @keyframes pfall{from{transform:translateY(-110%)}to{transform:translateY(calc(100vh + 40px))}}
+  @keyframes sway{from{transform:translateX(-14px) rotate(calc(var(--r) - 7deg))}to{transform:translateX(14px) rotate(calc(var(--r) + 7deg))}}
+  #final{z-index:5;pointer-events:none}
+  #final h2,#final p{text-shadow:0 0 18px #ff8fb3,0 0 40px var(--glow),0 2px 8px rgba(0,0,0,.8)}
+  #final .btn{pointer-events:auto}
+  #zoom{position:fixed;inset:0;z-index:40;background:rgba(5,6,20,.82);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s}
+  #zoom.on{opacity:1;pointer-events:auto}
+  #zoom .in{background:#fff;padding:10px 10px 40px;box-shadow:0 10px 40px rgba(0,0,0,.6);transform:scale(.8) rotate(-3deg);transition:transform .4s}
+  #zoom.on .in{transform:scale(1) rotate(-2deg)}
+  #zoom img{display:block;max-width:min(82vw,520px);max-height:70vh;object-fit:contain}
 </style>
 </head>
 <body>
 <div id="sky"></div>
 <div id="bgwrap"><div id="bgheart">♥</div></div>
 <div id="fx"></div>
-<button id="music" aria-label="Música" title="Música">♫</button>
+<button id="music" aria-label="Pausar o reanudar la música" title="Música">♫</button>
 <audio id="song" src="cancion.mp3" loop preload="metadata"></audio>
 
 <section id="intro" class="screen">
@@ -72,6 +98,13 @@
   <p>TENGO ALGO QUE DECIRTE</p>
   <div id="heart" role="button" aria-label="Abrir el corazón">♥</div>
   <div class="tap">PULSA EL CORAZÓN</div>
+</section>
+
+<section id="vinyl" class="screen hidden">
+  <div class="disc"><div>♥</div></div>
+  <h2>Antes de seguir…</h2>
+  <p>Bueno amor, esto te va a sonar mejor con tu canción favorita 🎶</p>
+  <button class="btn" id="play">Dale al play ▶</button>
 </section>
 
 <section id="words" class="screen hidden">
@@ -85,6 +118,9 @@
   <div class="btns"><button class="btn" id="yes">Sí</button><button class="btn" id="no">No</button></div>
   <div id="noMsg"></div>
 </section>
+
+<div id="photos"></div>
+<div id="zoom"><div class="in"><img alt="Foto nuestra"></div></div>
 
 <section id="final" class="screen hidden">
   <h2>Te quiero, mi amor</h2>
@@ -106,7 +142,6 @@ const LANGS=[
  ["Mahal kita","Filipinas"],["Nakupenda","Kenia"],["Aloha au iā ʻoe","Hawái"],["Eu te amo","Brasil"],
  ["Te amo","Antigua Roma"]
 ];
-const STEP=2200;
 const $=id=>document.getElementById(id);
 const show=id=>$(id).classList.remove('hidden'), hide=id=>$(id).classList.add('hidden');
 
@@ -117,7 +152,7 @@ setInterval(()=>{const s=document.createElement('div');s.className='shoot';s.sty
 
 /* Lluvia de corazones al tocar */
 function burst(x,y,n=10){for(let i=0;i<n;i++){const h=document.createElement('div');h.className='burst';h.textContent='♥';const a=Math.random()*Math.PI*2,d=50+Math.random()*90;h.style.cssText=`left:${x}px;top:${y}px;font-size:${12+Math.random()*18}px;--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d-40}px;--r:${Math.random()*60-30}deg;--t:${.9+Math.random()*.6}s`;$('fx').appendChild(h);setTimeout(()=>h.remove(),1600)}}
-document.addEventListener('pointerdown',e=>{if(e.target.closest('#music,#no'))return;burst(e.clientX,e.clientY)});
+document.addEventListener('pointerdown',e=>{if(e.target.closest('#music,#no,.pol,#zoom'))return;burst(e.clientX,e.clientY)});
 function rain(n=70){for(let i=0;i<n;i++)setTimeout(()=>{const h=document.createElement('div');h.className='rain';h.textContent='♥';h.style.cssText=`left:${Math.random()*100}vw;font-size:${14+Math.random()*26}px;--t:${3+Math.random()*3}s;--r:${Math.random()*360}deg`;$('fx').appendChild(h);setTimeout(()=>h.remove(),6500)},i*60)}
 
 /* Música */
@@ -131,11 +166,16 @@ mbtn.classList.add('off');
 /* Corazón → idiomas */
 let timer;
 $('heart').onclick=()=>{
-  setMusic(true);
   $('heart').classList.add('open');
   hide('intro');
   $('bgheart').classList.add('on');
-  setTimeout(()=>{show('words');runWords()},900);
+  setTimeout(()=>{if(hasSong&&!musicOn)show('vinyl');else{show('words');runWords()}},900);
+};
+$('play').onclick=()=>{
+  if($('vinyl').classList.contains('playing'))return;
+  $('vinyl').classList.add('playing');$('play').textContent='Sonando… 🎶';
+  setMusic(true);mbtn.classList.add('ready');
+  setTimeout(()=>{hide('vinyl');setTimeout(()=>{show('words');runWords()},900)},2600);
 };
 function runWords(){
   let i=0,step=2600;const w=$('word'),l=$('lang'),c=$('count');
@@ -150,6 +190,23 @@ function runWords(){
   next();
 }
 function fit(el){el.style.fontSize='';const max=innerWidth-32;let fs=parseFloat(getComputedStyle(el).fontSize);while(el.scrollWidth>max&&fs>18){fs-=2;el.style.fontSize=fs+'px'}}
+/* Lluvia de fotos */
+const PHOTOS=[1,2,3,4,5,6,7,8,9].map(n=>`fotos/${n}.jpg`).sort(()=>Math.random()-.5);
+let photoTimer,photoIdx=0;
+function dropPhoto(){
+  if(!PHOTOS.length)return;
+  const src=PHOTOS[photoIdx++%PHOTOS.length],el=document.createElement('div'),t=13+Math.random()*5;
+  el.className='pol';el.innerHTML=`<div class="in"><img src="${src}" alt="Foto nuestra" loading="lazy"></div>`;
+  el.style.left=(Math.random()*(100-28))+'vw';
+  el.style.setProperty('--t',t+'s');el.style.setProperty('--s',(2.2+Math.random()*1.6)+'s');el.style.setProperty('--r',(Math.random()*16-8)+'deg');
+  el.onclick=()=>{$('zoom').querySelector('img').src=src;$('zoom').classList.add('on')};
+  $('photos').appendChild(el);setTimeout(()=>el.remove(),t*1000+200);
+}
+function startPhotos(){if(!PHOTOS.length)return;dropPhoto();photoTimer=setInterval(dropPhoto,innerWidth<600?2600:1800)}
+function stopPhotos(){clearInterval(photoTimer);$('photos').innerHTML=''}
+$('zoom').onclick=()=>$('zoom').classList.remove('on');
+PHOTOS.forEach(src=>{const i=new Image();i.src=src});
+
 /* Pregunta trampa */
 const noMsgs=["¿Seguro? 🥺","Piénsalo bien…","Ese botón no funciona","Inténtalo otra vez 😏","Casi…","¡Que no te dejo!",
  "Me vas a romper el corazón 💔","Ese botón está de adorno","Te estoy viendo, ¿eh? 👀","El Sí está ahí, muy cerquita",
@@ -161,9 +218,9 @@ let noCount=0;
 const no=$('no');
 function flee(e){if(e)e.preventDefault();const r=no.getBoundingClientRect();no.classList.add('free');const pad=20,W=innerWidth-r.width-pad,H=innerHeight-r.height-pad;const Y=$('yes').getBoundingClientRect(),gap=24;let x,y,t=0;do{x=pad+Math.random()*(W-pad);y=pad+Math.random()*(H-pad);t++}while(t<200&&(Math.hypot(x-r.left,y-r.top)<120||(x<Y.right+gap&&x+r.width>Y.left-gap&&y<Y.bottom+gap&&y+r.height>Y.top-gap)));no.style.left=x+'px';no.style.top=y+'px';const m=noCount<noMsgs.length?noMsgs[noCount]:noMsgs[noMsgs.length-1];noCount++;$('noMsg').textContent=m.replace('{n}',noCount);$('yes').style.transform=`scale(${Math.min(1+noCount*0.07,1.8)})`}
 no.addEventListener('mouseenter',flee);no.addEventListener('touchstart',flee,{passive:false});no.addEventListener('click',flee);
-$('yes').onclick=()=>{hide('question');no.classList.remove('free');no.style.left=no.style.top='';rain();setTimeout(()=>show('final'),400)};
+$('yes').onclick=()=>{hide('question');no.classList.remove('free');no.style.left=no.style.top='';rain();setTimeout(()=>{show('final');startPhotos()},400)};
 
-$('again').onclick=()=>{hide('final');$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
+$('again').onclick=()=>{hide('final');stopPhotos();$('vinyl').classList.remove('playing');$('play').textContent='Dale al play ▶';$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
 </script>
 </body>
 </html>
