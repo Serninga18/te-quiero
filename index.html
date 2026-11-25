@@ -20,6 +20,7 @@
 
   .screen{position:fixed;inset:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity 1s ease}
   .hidden{opacity:0;pointer-events:none}
+  .hidden *{pointer-events:none!important}
 
   #intro h1{font-weight:400;font-style:italic;font-size:clamp(28px,6vw,48px);margin:0 0 8px;text-shadow:0 0 14px #ff8fb3}
   #intro p{font-family:Poppins;font-weight:300;letter-spacing:3px;font-size:13px;margin:0 0 40px;opacity:.8}
@@ -169,22 +170,27 @@ $('heart').onclick=()=>{
   $('heart').classList.add('open');
   hide('intro');
   $('bgheart').classList.add('on');
-  setTimeout(()=>{if(hasSong&&!musicOn)show('vinyl');else{show('words');runWords()}},900);
+  setTimeout(()=>{if(hasSong&&!vinylDone)show('vinyl');else{show('words');runWords()}},900);
 };
+let vinylDone=false;
 $('play').onclick=()=>{
+  vinylDone=true;
   if($('vinyl').classList.contains('playing'))return;
   $('vinyl').classList.add('playing');$('play').textContent='Sonando… 🎶';
   setMusic(true);mbtn.classList.add('ready');
   setTimeout(()=>{hide('vinyl');setTimeout(()=>{show('words');runWords()},900)},2600);
 };
+let runId=0;
 function runWords(){
+  const id=++runId;clearTimeout(timer);
   let i=0,step=2600;const w=$('word'),l=$('lang'),c=$('count');
   const next=()=>{
+    if(id!==runId)return;
     const fade=Math.round(Math.min(600,step*0.3));
     w.style.transition=l.style.transition=`opacity ${fade}ms, transform ${fade}ms`;
     w.classList.add('fadeout');l.classList.add('fadeout');
     if(i>=LANGS.length){setTimeout(()=>{hide('words');show('question')},900);return}
-    setTimeout(()=>{w.textContent=LANGS[i][0];l.textContent=LANGS[i][1].toUpperCase();c.textContent=`${i+1} / ${LANGS.length}`;fit(w);w.classList.remove('fadeout');l.classList.remove('fadeout');i++;
+    setTimeout(()=>{if(id!==runId)return;w.textContent=LANGS[i][0];l.textContent=LANGS[i][1].toUpperCase();c.textContent=`${i+1} / ${LANGS.length}`;fit(w);w.classList.remove('fadeout');l.classList.remove('fadeout');i++;
       step=Math.max(380,step*0.88);timer=setTimeout(next,i>=LANGS.length?2200:step)},fade);
   };
   next();
@@ -220,7 +226,7 @@ function flee(e){if(e)e.preventDefault();const r=no.getBoundingClientRect();no.c
 no.addEventListener('mouseenter',flee);no.addEventListener('touchstart',flee,{passive:false});no.addEventListener('click',flee);
 $('yes').onclick=()=>{hide('question');no.classList.remove('free');no.style.left=no.style.top='';rain();setTimeout(()=>{show('final');startPhotos()},400)};
 
-$('again').onclick=()=>{hide('final');stopPhotos();$('vinyl').classList.remove('playing');$('play').textContent='Dale al play ▶';$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
+$('again').onclick=()=>{hide('final');stopPhotos();$('heart').classList.remove('open');$('bgheart').classList.remove('on');$('noMsg').textContent='';noCount=0;$('yes').style.transform='';show('intro')};
 </script>
 </body>
 </html>
